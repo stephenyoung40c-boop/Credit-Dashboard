@@ -31,6 +31,23 @@ const fmt = (c: number | null | undefined) =>
   c == null ? '—' : `$${(c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const fmtWhole = (c: number) => `$${Math.round(c / 100).toLocaleString()}`
 
+const MONTHS: Record<string, number> = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 }
+
+// A weekend is "past" once the last day in its label (e.g. "Nov 30–Dec 2") has ended.
+// Labels carry no year, so assume the nearest occurrence within the last ~6 months / next ~6 months.
+function weekendEnded(label: string, now: Date): boolean {
+  const m = label.match(/^\s*([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})(?:\s*[–-]\s*(?:([A-Za-z]{3})[a-z]*\.?\s+)?(\d{1,2}))?/)
+  if (!m) return false
+  const sm = MONTHS[m[1].toLowerCase()]
+  const em = m[3] ? MONTHS[m[3].toLowerCase()] : sm
+  const ed = m[4] ? Number(m[4]) : Number(m[2])
+  if (sm == null || em == null) return false
+  let year = now.getFullYear()
+  const build = (y: number) => new Date(em < sm ? y + 1 : y, em, ed, 23, 59, 59)
+  if (build(year).getTime() < now.getTime() - 183 * 86400000) year += 1
+  return build(year).getTime() < now.getTime()
+}
+
 function oopFor(b: HotelBooking): number | null {
   if (b.total_cents == null) return null
   const credit = b.booked ? b.credits_used_cents : PROGRAM_INCREMENT_CENTS[b.program]
@@ -144,6 +161,14 @@ export default function HotelTrackerPage({
     return map
   }, [bookings])
 
+  const { upcoming, past } = useMemo(() => {
+    const now = new Date()
+    const up: HotelWeekend[] = []
+    const old: HotelWeekend[] = []
+    for (const w of weekends) (weekendEnded(w.label, now) ? old : up).push(w)
+    return { upcoming: up, past: old }
+  }, [weekends])
+
   const weekendHasBooked = (id: string) => (byWeekend.get(id) ?? []).some(b => b.booked)
 
   const lastUpdated = useMemo(() => {
@@ -236,14 +261,15 @@ export default function HotelTrackerPage({
       {/* ── Pill nav: Overview + one page per weekend ─────────────── */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '4px 0 16px', borderBottom: '1px solid var(--sand)', marginBottom: 20 }}>
         <PageTab active={page === 'overview'} onClick={() => setPage('overview')} label="Overview" />
-        {weekends.map(w => (
+        {weekends.filter(w => !past.some(p => p.id === w.id) || w.id === page).map(w => (
           <PageTab key={w.id} active={page === w.id} onClick={() => setPage(w.id)} label={w.label} booked={weekendHasBooked(w.id)} />
         ))}
       </div>
 
       {page === 'overview' ? (
         <OverviewList
-          weekends={weekends}
+          weekends={upcoming}
+          pastWeekends={past}
           byWeekend={byWeekend}
           onOpen={setPage}
           addingWeekend={addingWeekend}
@@ -290,9 +316,10 @@ function PageTab({ active, onClick, label, booked }: { active: boolean; onClick:
 
 // ── Overview page: one line per weekend, click to jump ────────────
 function OverviewList({
-  weekends, byWeekend, onOpen, addingWeekend, onToggleAdding, onWeekendAdded, onCancelAdding, inp, btn, btnGhost,
+  weekends, pastWeekends, byWeekend, onOpen, addingWeekend, onToggleAdding, onWeekendAdded, onCancelAdding, inp, btn, btnGhost,
 }: {
   weekends: HotelWeekend[]
+  pastWeekends: HotelWeekend[]
   byWeekend: Map<string, HotelBooking[]>
   onOpen: (id: string) => void
   addingWeekend: boolean
@@ -301,16 +328,7 @@ function OverviewList({
   onCancelAdding: () => void
   inp: React.CSSProperties; btn: React.CSSProperties; btnGhost: React.CSSProperties
 }) {
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <h2 className="fr" style={{ fontSize: 18 }}>Weekends</h2>
-        <button onClick={onToggleAdding} style={btn}>+ New Weekend</button>
-      </div>
-
-      {addingWeekend && <NewWeekendForm onDone={onWeekendAdded} onCancel={onCancelAdding} inp={inp} btn={btn} btnGhost={btnGhost} />}
-
-      {weekends.map(w => {
+  const renderRow = (w: HotelWeekend, isPast: boolean) => {
         const list = byWeekend.get(w.id) ?? []
         const booked = list.filter(b => b.booked)
         const cheapest = [...list].filter(b => b.total_cents != null).sort((a, b) => (oopFor(a) ?? 1e9) - (oopFor(b) ?? 1e9))[0]
@@ -328,17 +346,37 @@ function OverviewList({
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 600, fontSize: 15 }}>
-                {w.label} {booked.length > 0 && <span style={{ color: '#166534', fontWeight: 700 }}>✓</span>}
+                {w.label} {booked.length > 0 && <span style={{ color: '#166534', fontWeight: 700 }}>{isPast ? '✓ Used' : '✓'}</span>}{isPast && booked.length === 0 && <span style={{ color: 'var(--bark)', fontWeight: 500, fontSize: 12 }}>· Passed</span>}
               </span>
               <span style={{ fontSize: 12, color: 'var(--bark)' }}>{list.length} option{list.length === 1 ? '' : 's'}</span>
             </div>
-            {w.best && <p style={{ fontSize: 13, color: 'var(--ink)', marginTop: 6 }}>{w.best}</p>}
-            {!w.best && oop != null && <p style={{ fontSize: 13, color: 'var(--bark)', marginTop: 6 }}>Best so far: {fmt(oop)} OOP</p>}
+            {!isPast && w.best && <p style={{ fontSize: 13, color: 'var(--ink)', marginTop: 6 }}>{w.best}</p>}
+            {!isPast && !w.best && oop != null && <p style={{ fontSize: 13, color: 'var(--bark)', marginTop: 6 }}>Best so far: {fmt(oop)} OOP</p>}
           </button>
         )
-      })}
+  }
 
-      {weekends.length === 0 && <p style={{ color: 'var(--bark)', fontSize: 14 }}>No weekends yet — add one to start tracking hotel options.</p>}
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <h2 className="fr" style={{ fontSize: 18 }}>Weekends</h2>
+        <button onClick={onToggleAdding} style={btn}>+ New Weekend</button>
+      </div>
+
+      {addingWeekend && <NewWeekendForm onDone={onWeekendAdded} onCancel={onCancelAdding} inp={inp} btn={btn} btnGhost={btnGhost} />}
+
+      {weekends.map(w => renderRow(w, false))}
+
+      {weekends.length === 0 && pastWeekends.length === 0 && <p style={{ color: 'var(--bark)', fontSize: 14 }}>No weekends yet — add one to start tracking hotel options.</p>}
+
+      {pastWeekends.length > 0 && (
+        <details style={{ marginTop: 18 }}>
+          <summary style={{ cursor: 'pointer', userSelect: 'none', fontSize: 13, fontWeight: 600, color: 'var(--bark)', marginBottom: 10 }}>
+            Past weekends ({pastWeekends.length})
+          </summary>
+          <div style={{ marginTop: 10 }}>{pastWeekends.map(w => renderRow(w, true))}</div>
+        </details>
+      )}
     </div>
   )
 }

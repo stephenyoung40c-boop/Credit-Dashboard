@@ -6,7 +6,7 @@ export const runtime = 'nodejs'
 // Exact-match public paths only.
 // /api/credits uses x-api-key auth (fail-closed) — do NOT prefix-match it here
 // or sub-routes like /api/credits/[id]/log would be silently exempted.
-const PUBLIC_EXACT: Set<string> = new Set(['/login', '/api/auth/login', '/api/auth/check'])
+const PUBLIC_EXACT: Set<string> = new Set(['/login', '/api/auth/login', '/api/auth/check', '/api/health'])
 const PUBLIC_PREFIX: string[] = []  // intentionally empty — add only with care
 
 export async function middleware(req: NextRequest) {

@@ -213,7 +213,7 @@ export default function HotelTrackerPage({
               {(['thc', 'fhr', 'edit', 'citi_travel'] as HotelProgram[]).map(p => (
                 <span key={p} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <i style={{ width: 9, height: 9, borderRadius: '50%', display: 'inline-block', background: PROGRAM_COLOR[p] }} />
-                  <b style={{ color: 'var(--ink)' }}>{PROGRAM_LABEL[p]}</b> — {PROGRAM_MIN_NIGHTS[p]} night{PROGRAM_MIN_NIGHTS[p] === 1 ? '' : 's'}, {PROGRAM_ISSUER[p]}
+                  <b style={{ color: 'var(--ink)' }}>{PROGRAM_LABEL[p]}</b> — {p === 'fhr' ? '1 night if booked by Dec 31, 2026 (2 nights from 2027)' : `${PROGRAM_MIN_NIGHTS[p]} night${PROGRAM_MIN_NIGHTS[p] === 1 ? '' : 's'}`}, {PROGRAM_ISSUER[p]}
                 </span>
               ))}
             </p>

@@ -28,12 +28,15 @@ type Program = {
   benefits: Benefit[]
 }
 
-const AUDITED = 'Oct 24, 2026'
+const AUDITED = 'Nov 10, 2026'
 
 const CHANGES: { date: string; text: string }[] = [
+  { date: 'Jan 1, 2027', text: 'Every hotel credit now needs 2+ nights (Amex Lodging, The Edit, Citi). The one-night-per-card FHR split ends Dec 31, 2026 — use back-to-back 2-night bookings on different cards instead.' },
+  { date: 'Jan 1, 2027', text: 'The Edit adds 10,000+ vacation homes (Plum Guide). Edit credit works on them (prepaid, 2+ nights, $250 max per booking); extra home perks need 4+ nights. Personal Reserve stays at $500/yr.' },
+  { date: 'Dec 31, 2026', text: 'Sapphire Reserve $250 Select Hotel credit ends. No 2027 version announced.' },
   { date: 'Jan 1, 2027', text: 'Amex Platinum: FHR stays need 2+ nights to earn the lodging credit (FHR perks still apply on 1 night). Amex hasn’t said if this is booking date or stay date — finish 2026 one-nighters with both booking and stay in 2026 to be safe.' },
   { date: 'Oct 22, 2026', text: 'Amex Platinum: hotel credit renamed $600 Lodging Credit and now covers prepaid Airbnb Luxe (2+ nights) via Amex Travel. New $250/yr Airbnb Experiences credit. 5x on prepaid Airbnb via Amex Travel.' },
-  { date: 'Oct 1, 2026', text: 'IHG Premier refresh announced: +$100 airline credit, +$100 IHG F&B credit, free-night cap 40k→50k, fee $99→$150 in 2027. Effective dates for existing cardholders still pending a Chase notice.' },
+  { date: 'Oct 1, 2026', text: 'IHG Premier refresh in effect (Chase email): $25/quarter IHG food & beverage reward, $100/yr airline credit after $250+ direct airfare (through 2027), free-night cap 50k for nights issued in 2027, fee $150 in 2027, auto status drops to Gold on Jan 1, 2028.' },
   { date: 'Oct 1, 2026', text: 'Sapphire Reserve: DoorDash $5 restaurant credit → $15/mo on any order type.' },
   { date: 'Jul 1, 2026', text: 'CLEAR+ credit $209 → $219 (Platinum, Aspire) to match CLEAR price increase.' },
   { date: 'Jun 15, 2026', text: 'Sapphire Preferred: Chase Travel hotel credit $50 → $100, added $120 Global Entry/TSA credit, 1-yr Apple TV (activate by Dec 31, 2026).' },
@@ -125,7 +128,7 @@ const PROGRAMS: Program[] = [
         how: 'Automatic on any travel purchase. Use hotel credits first.' },
       { name: 'The Edit', value: '$500 / calendar year (2 × $250)',
         how: 'Prepaid Edit property, 2+ nights, booked through Chase Travel.',
-        rules: ['Max $250 per booking — two bookings for the full $500.', 'Both halves usable any time in the year.'] },
+        rules: ['Max $250 per booking — two bookings for the full $500.', 'Both halves usable any time in the year.', 'From Jan 1, 2027 also works on Edit vacation homes.'] },
       { name: 'Select Hotel Credit (2026)', value: '$250 one-time', flag: 'ending',
         how: 'Prepaid Chase Travel stay, 2+ nights: IHG, Montage, Pendry, Omni, Virgin, Minor, Pan Pacific.',
         rules: ['Book in 2026 (stay can be 2027). Reported to stack with an Edit $250 on the same booking.'] },
@@ -175,12 +178,13 @@ const PROGRAMS: Program[] = [
     match: c => c.display_name.startsWith('IHG'),
     fee: '$99 ($150 in 2027) — waived (MLA)',
     benefits: [
-      { name: 'Anniversary Free Night', value: 'Up to 40k pts (→ 50k)', flag: 'changed',
-        how: 'Auto on anniversary. Can top up with points.' },
+      { name: 'Anniversary Free Night', value: 'Up to 40k pts (50k if issued in 2027)', flag: 'changed',
+        how: 'Auto on anniversary. Can top up with points.',
+        rules: ['Stay must be completed within 12 months of issue.'] },
       { name: '4th Night Free', value: 'On award stays', how: 'Book 4+ night award stays; one night refunded.' },
-      { name: 'United TravelBank', value: 'Up to $50 / year', how: 'Register the card with United; cash posts to TravelBank.' },
-      { name: 'Airline Credit', value: '$100 / year', flag: 'pending', how: 'New — start date for existing cardholders not yet announced.' },
-      { name: 'IHG F&B Credit', value: '$100 / year', flag: 'pending', how: 'New — food & beverage at IHG hotels. Start date pending.' },
+      { name: 'United TravelBank', value: 'Up to $50 / year', how: 'Register the card with United; $25 posts about Jan 5 and Jul 5.', rules: ['Each deposit expires about six months later (Jul 15 / Jan 15).'] },
+      { name: 'Airline Credit', value: '$100 / calendar year', flag: 'new', how: 'Statement credit after $250+ on flights bought direct from an airline. Runs through Dec 31, 2027.' },
+      { name: 'IHG Food & Beverage Reward', value: '$25 / quarter', flag: 'new', how: 'Use on food and drink at IHG hotels.', rules: ['Expires at the end of each quarter.', 'Room must be in the cardholder’s name.'] },
       { name: 'Global Entry / TSA PreCheck', value: '$120 every 4 yrs', how: 'Pay the fee with the card. (Not mentioned in refresh — confirm.)' },
     ],
   },

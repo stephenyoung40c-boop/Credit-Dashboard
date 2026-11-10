@@ -29,6 +29,7 @@ export default async function DashboardPage() {
     { data: pointsAccounts },
     { data: pointTx },
     { data: certBalanceTx },
+    { data: hotelLibrary },
   ] = await Promise.all([
     db.from('cards').select('*').eq('active', true).order('owner').order('created_at'),
     db.from('credits').select('*, cards(anniversary_month,anniversary_day)')
@@ -41,6 +42,7 @@ export default async function DashboardPage() {
     db.from('points_accounts').select('*'),
     db.from('point_transactions').select('*').order('occurred_on', { ascending: false }),
     db.from('cert_balance_transactions').select('*').order('occurred_on', { ascending: false }) as unknown as Promise<{ data: CertBalanceTransaction[] | null }>,
+    db.from('hotel_library').select('*').eq('active', true).order('city').order('name'),
   ])
 
   // ── Attach period state to each credit ──────────────────────
@@ -110,6 +112,7 @@ export default async function DashboardPage() {
       certRedemptions={certRedemptions ?? []}
       hotelWeekends={hotelWeekends ?? []}
       hotelBookings={hotelBookings ?? []}
+      hotelLibrary={hotelLibrary ?? []}
       pointsAccounts={pointsAccounts ?? []}
       pointTransactions={(pointTx ?? []) as PointTransaction[]}
       certBalanceTransactions={(certBalanceTx ?? []) as CertBalanceTransaction[]}

@@ -12,7 +12,7 @@
 
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Card, Certificate, CertRedemption, CertBalanceTransaction, HotelWeekend, HotelBooking, PointsAccount, PointTransaction } from '@/types/db'
+import type { Card, Certificate, CertRedemption, CertBalanceTransaction, HotelWeekend, HotelBooking, HotelLibrary, PointsAccount, PointTransaction } from '@/types/db'
 import type { EnrichedCredit } from '@/types/enriched'
 import TodayPage from '@/components/TodayPage'
 import PointsPage from '@/components/PointsPage'
@@ -20,6 +20,7 @@ import BalanceCertRow from '@/components/BalanceCertRow'
 import HotelTrackerPage from '@/components/HotelTrackerPage'
 import PartialUseEditor from '@/components/PartialUseEditor'
 import BenefitsGuidePage from '@/components/BenefitsGuidePage'
+import PlannerPage, { HotelBurnPanel } from '@/components/PlannerPage'
 
 interface Props {
   cards:              Card[]
@@ -29,6 +30,7 @@ interface Props {
   certBalanceTransactions: CertBalanceTransaction[]
   hotelWeekends:      HotelWeekend[]
   hotelBookings:      HotelBooking[]
+  hotelLibrary:       HotelLibrary[]
   pointsAccounts:     PointsAccount[]
   pointTransactions:  PointTransaction[]
   today:              string
@@ -569,8 +571,8 @@ function CertsPage({ certificates, cards, certRedemptions: initRedemptions, cert
 // ── (Trips / Hotel Library / Notes replaced by HotelTrackerPage.tsx) ──
 // ── Main dashboard ─────────────────────────────────────────────
 
-export default function DashboardClient({ cards, credits: initialCredits, certificates: initialCertificates, certRedemptions, certBalanceTransactions: initialCertBalanceTx, hotelWeekends, hotelBookings, pointsAccounts: initialPointsAccounts, pointTransactions: initialPointTx, today }: Props) {
-  const [tab, setTab] = useState<'today' | 'credits' | 'points' | 'certs' | 'hotels' | 'guide'>('today')
+export default function DashboardClient({ cards, credits: initialCredits, certificates: initialCertificates, certRedemptions, certBalanceTransactions: initialCertBalanceTx, hotelWeekends, hotelBookings, hotelLibrary, pointsAccounts: initialPointsAccounts, pointTransactions: initialPointTx, today }: Props) {
+  const [tab, setTab] = useState<'today' | 'credits' | 'points' | 'certs' | 'hotels' | 'planner' | 'guide'>('today')
   const [credits, setCredits] = useState(initialCredits)
   const [pointsAccounts, setPointsAccounts] = useState(initialPointsAccounts)
   const [pointTransactions, setPointTransactions] = useState(initialPointTx)
@@ -676,6 +678,7 @@ export default function DashboardClient({ cards, credits: initialCredits, certif
     { id: 'points'  as const, label: 'Points',        icon: '⭐' },
     { id: 'certs'   as const, label: 'Certificates',  icon: '🎟' },
     { id: 'hotels'  as const, label: 'Hotel Tracker', icon: '🏨' },
+    { id: 'planner' as const, label: 'Trip Planner',  icon: '🧭' },
     { id: 'guide'   as const, label: 'Benefits Guide', icon: '📖' },
   ]
 
@@ -761,6 +764,9 @@ export default function DashboardClient({ cards, credits: initialCredits, certif
           </div>
 
           {tab === 'today' && (
+            <HotelBurnPanel cards={cards} credits={credits} today={today} onPlan={() => setTab('planner')} />
+          )}
+          {tab === 'today' && (
             <TodayPage cards={cards} credits={credits} onToggle={handleToggle} onSetUsed={handleSetUsed} today={today} />
           )}
           {tab === 'credits' && (
@@ -786,6 +792,9 @@ export default function DashboardClient({ cards, credits: initialCredits, certif
               onTransactionAdded={handleCertTxAdded}
               onTransactionRemoved={handleCertTxRemoved}
             />
+          )}
+          {tab === 'planner' && (
+            <PlannerPage cards={cards} credits={credits} library={hotelLibrary} today={today} />
           )}
           {tab === 'guide' && <BenefitsGuidePage cards={cards} />}
           {tab === 'hotels' && (
